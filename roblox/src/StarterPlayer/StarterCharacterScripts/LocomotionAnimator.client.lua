@@ -26,8 +26,12 @@ local character = script.Parent :: Model
 local humanoid = character:WaitForChild("Humanoid") :: Humanoid
 local rootPart = character:WaitForChild("HumanoidRootPart") :: BasePart
 
+print(("[LocomotionAnimator] started for %s | rig %s | default Animate script %s"):format(
+	character.Name, humanoid.RigType.Name, if character:FindFirstChild("Animate") then "found" else "MISSING"))
+
 if humanoid.RigType ~= Enum.HumanoidRigType.R6 then
-	warn("[LocomotionAnimator] Character is not R6; locomotion animations are R6-only. Disabled.")
+	warn("[LocomotionAnimator] Character is not R6 (it is " .. humanoid.RigType.Name
+		.. "). Set Game Settings > Avatar > Avatar Type to R6. Disabled.")
 	return
 end
 
@@ -43,11 +47,19 @@ local function resolveAnimationId(assetId: number, sourceName: string): string?
 		local sources = LocomotionFolder:FindFirstChild("Sources")
 		local sequence = sources and sources:FindFirstChild(sourceName)
 		if sequence and sequence:IsA("KeyframeSequence") then
-			warn(("[LocomotionAnimator] %s has no published id; using a Studio-only temporary id."):format(sourceName))
-			return KeyframeSequenceProvider:RegisterKeyframeSequence(sequence)
+			local ok, tempId = pcall(function()
+				return KeyframeSequenceProvider:RegisterKeyframeSequence(sequence)
+			end)
+			if ok and tempId then
+				print(("[LocomotionAnimator] %s: no published id yet, using Studio-only temporary id %s"):format(sourceName, tostring(tempId)))
+				return tempId
+			end
+			warn(("[LocomotionAnimator] %s: could not create a Studio test id (%s). Publish it and set the id in Config."):format(sourceName, tostring(tempId)))
+			return nil
 		end
 	end
-	warn(("[LocomotionAnimator] No animation id for %s (set it in LocomotionAnimation.Config)."):format(sourceName))
+	warn(("[LocomotionAnimator] No animation id for %s (set it in LocomotionAnimation.Config, and check that"
+		.. " ReplicatedStorage.LocomotionAnimation.Sources.%s exists)."):format(sourceName, sourceName))
 	return nil
 end
 
@@ -62,6 +74,14 @@ local function loadTrack(assetId: number, sourceName: string): AnimationTrack?
 	local track = animator:LoadAnimation(animation)
 	track.Priority = Enum.AnimationPriority.Movement
 	track.Looped = true
+	task.delay(3, function()
+		if track.Length > 0 then
+			print(("[LocomotionAnimator] %s loaded OK (%.3f s, id %s)"):format(sourceName, track.Length, id))
+		else
+			warn(("[LocomotionAnimator] %s did NOT load (id %s). If this is a published id, it must be owned by the"
+				.. " game's owner (your group)."):format(sourceName, id))
+		end
+	end)
 	return track
 end
 
@@ -115,6 +135,7 @@ local function setMode(newMode: Mode, fade: number)
 		end
 	end
 	currentMode = newMode
+	print("[LocomotionAnimator] now playing: " .. newMode)
 end
 
 local function horizontalSpeed(): number
