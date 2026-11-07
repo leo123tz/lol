@@ -5,6 +5,26 @@ Recreates the walking and running animations shown in the reference video
 **R6** rig. They're authored in Blender and exported as Roblox `KeyframeSequence`s, with a
 small client controller that plays them in game.
 
+## Status (read first)
+
+| | Timing | Poses | Verdict |
+|---|---|---|---|
+| **Walk** (`R6_Walk`) | exact (1.000 s cycle) | broadly match the video: arm swing-outs, high knee lift, step rhythm | usable, approximate rather than frame-exact |
+| **Run** (`R6_Run`) | exact (0.667 s cycle) | general sprint shape only. The head is bowed while the reference keeps it upright, and the limbs often miss | **not finished**, needs hand correction |
+
+`animation/output/compare_walk.mp4` and `compare_run.mp4` show each animation next to the
+reference video, with the recreated outline drawn over the reference.
+
+The Blender → Roblox pipeline and the controller are complete and verified. The limit is
+how precisely 3D poses can be recovered from this single 12 fps, 3/4-view TikTok clip.
+Ways to finish the run:
+
+1. **Best:** the clip says *"Link in comments"*, so its creator (`@aski_2603`) appears to share the
+   original animations. If you can get them, they are exact.
+2. Open `animation/output/R6_Locomotion.blend` and correct the `R6_Run` keys by hand. The
+   rig's channels map 1:1 to Roblox (table below). Re-export with `--export-only`.
+3. A clearer reference (side view, higher frame rate) would let the same pipeline re-measure it.
+
 ```
 animation/
   data/R6_Walk.json, R6_Run.json      keyframed curves measured from the video (source of truth)
@@ -17,7 +37,7 @@ animation/
 roblox/
   default.project.json                optional Rojo project (syncs only the files below)
   src/ReplicatedStorage/LocomotionAnimation/Config.lua         animation ids + tuning
-  src/ReplicatedStorage/LocomotionAnimation/Sources/*.rbxmx    KeyframeSequences (Studio test)
+  src/ReplicatedStorage/LocomotionAnimation/Sources/*.rbxmx    copies of the exported KeyframeSequences (Studio test)
   src/StarterPlayer/StarterCharacterScripts/LocomotionAnimator.client.lua
 docs/REFERENCE_ANALYSIS.md            what the video shows, with measurements
 ```

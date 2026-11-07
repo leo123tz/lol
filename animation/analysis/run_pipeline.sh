@@ -9,8 +9,8 @@ REPO="$(cd "$HERE/../.." && pwd)"
 cd "$HERE/tools"
 
 python3 prepare.py "$VIDEO"          # gameplay crop + the unique frames of one 2 s loop
-python3 timing.py                    # cycle lengths by autocorrelation (walk 30 f, run 20 f)
-python3 masks.py                     # per-frame labels: white parts / torso / certain background
+python3 timing.py "$(pwd)/.."         # cycle lengths by autocorrelation (walk 30 f, run 20 f)
+python3 masks.py "$(pwd)/.."         # per-frame labels: white parts / torso / certain background
 
 # 1) initial tracking from a rough placement guess (torso pixel + apparent size)
 python3 fit.py walk track 2
@@ -21,16 +21,20 @@ python3 place_search.py run  365 160     # -> depth 8.3, yaw 151.4, camera heigh
 # 3) re-track with one shared camera height of 5.90 studs (depths solved for that height)
 python3 fit.py walk track 2 --place 7.777 180 --fix-place
 python3 fit.py run  track 2 --place 8.222 151.4 --fix-place
-python3 fit_sym.py walk 6 --alt --tag sym     # bilaterally symmetric periodic model
-python3 fit_sym.py run  6 --alt --tag sym
-
+# 4) per-phase key poses (12 walk / 8 run phases, mirror-coupled) -> projected onto a smooth
+#    symmetric periodic model -> CMA-ES over all images (smooth by construction)
+python3 fit_sym.py walk 0 --init template --tag tem
+python3 fit_sym.py run  0 --init perframe --tag per
+python3 fit_keys.py walk ../data/sym_walk_tem.json --tag keys
+python3 fit_keys.py run  ../data/sym_run_per.json  --tag keys
 for CH in walk run; do
-  cp "../data/fitsym_${CH}_sym.json" "../data/fit_${CH}.json"
-  FITFILE="../data/dense_${CH}_sym.json" RIDGE=0 python3 make_curves.py "$CH" "$REPO/animation/data"
+  python3 -c "import sys,json,numpy as np; sys.argv=['fit_sym.py','$CH','0']; import fit_sym as F; k=json.load(open(f'{F.S}/data/keys_${CH}_keys.json')); json.dump({'coef_sym':F.project(np.array(k['K']),np.arange(k['nph'])/k['nph']).tolist(),'yaw':k['yaw']},open(f'{F.S}/data/sym_${CH}_fromkeys.json','w'))"
+  python3 fit_cma.py "$CH" "../data/sym_${CH}_fromkeys.json" 700 --tag cma --sigma 0.2
+  FITFILE="../data/dense_${CH}_cma.json" RIDGE=0 python3 make_curves.py "$CH" "$REPO/animation/data"
 done
 
 python3 "$REPO/animation/blender/build_r6_locomotion.py" --out "$REPO/animation/output" --preview
-python3 validate.py walk "$REPO/animation/output/R6_Walk.rbxmx"
-python3 validate.py run  "$REPO/animation/output/R6_Run.rbxmx"
-python3 compare_video.py walk "$REPO/animation/output/preview/R6_Walk" ../data/curve_walk.json "$REPO/animation/output/compare_walk.mp4"
-python3 compare_video.py run  "$REPO/animation/output/preview/R6_Run"  ../data/curve_run.json  "$REPO/animation/output/compare_run.mp4"
+FITFILE=../data/fitsym_walk_cma.json python3 validate.py walk "$REPO/animation/output/R6_Walk.rbxmx"
+FITFILE=../data/fitsym_run_cma.json python3 validate.py run  "$REPO/animation/output/R6_Run.rbxmx"
+FITFILE=../data/fitsym_walk_cma.json python3 compare_video.py walk "$REPO/animation/output/preview/R6_Walk" ../data/curve_walk.json "$REPO/animation/output/compare_walk.mp4"
+FITFILE=../data/fitsym_run_cma.json python3 compare_video.py run  "$REPO/animation/output/preview/R6_Run"  ../data/curve_run.json  "$REPO/animation/output/compare_run.mp4"

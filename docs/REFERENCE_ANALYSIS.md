@@ -65,3 +65,19 @@ is the main check that the camera model is right.
 6. **Export.** The curves are keyed in Blender (walk: a key every 3 frames, run: every 2 frames,
    Bézier handles from the analytic slopes, Cycles modifiers for seamless looping). The
    Roblox KeyframeSequence is sampled at 60 Hz from the evaluated Blender rig.
+
+## Results
+
+| | Facing yaw | Fit (loss per image, lower is better) | Notes |
+|---|---|---|---|
+| Walk | 181° (towards the camera) | 3983 | smooth symmetric model, 4 harmonics |
+| Run | 187° | 2516 | smooth symmetric model, 3 harmonics |
+
+Fitting each captured phase independently lowers the loss only a little (walk 3747, run 2409),
+but neighbouring poses then flip between the "limb forward" and "limb back" readings, which a
+single front/three-quarter view cannot tell apart. The resulting animation jitters badly.
+That is why the exported curves use the smooth model.
+
+Visual check: the walk follows the reference well. The run follows the timing and the general
+sprint shape, but the fitted head and torso orientation and several limb poses don't match
+the video. The run needs manual correction (see the README's Status section).
