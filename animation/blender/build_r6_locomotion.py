@@ -7,7 +7,8 @@ After hand-editing the keys in the saved .blend, re-export without rebuilding:
 or with the bpy module (pip install bpy):
     python3 animation/blender/build_r6_locomotion.py [--out DIR] [--data DIR] [--preview]
 
-Inputs : animation/data/R6_Walk.json, animation/data/R6_Run.json  (keyframed curves)
+Inputs : animation/data/R6_Walk.json, animation/data/R6_Run.json  (keyed curves; produced from the
+         original animations by animation/tools/import_original.py)
 Outputs: R6_Locomotion.blend            rig + both actions (edit these in Blender)
          R6_Walk.fbx / R6_Run.fbx       skinned R6 + baked action (interchange)
          R6_Walk.rbxmx / R6_Run.rbxmx   Roblox KeyframeSequence (import into Studio)
@@ -193,7 +194,7 @@ def build_action(rig, spec):
                 fc.keyframe_points.add(len(keys))
                 for kp, (fr, val, slope) in zip(fc.keyframe_points, keys):
                     kp.co = (fr, val)
-                    kp.interpolation = "BEZIER"
+                    kp.interpolation = spec.get("interpolation", "BEZIER")
                 for i, kp in enumerate(fc.keyframe_points):
                     fr, val, slope = keys[i]
                     dl = (fr - keys[i - 1][0]) if i > 0 else (keys[1][0] - keys[0][0])
@@ -399,9 +400,10 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     reset_scene()
     scene = bpy.context.scene
-    scene.render.fps = 30
-    rig = build_rig()
     specs = [json.load(open(os.path.join(DATA, f"{n}.json"))) for n in ("R6_Walk", "R6_Run")]
+    assert len({sp.get("fps", 30) for sp in specs}) == 1, "both actions must share one frame rate"
+    scene.render.fps = specs[0].get("fps", 30)
+    rig = build_rig()
     actions = [build_action(rig, sp) for sp in specs]
     report = {}
     for sp, act in zip(specs, actions):

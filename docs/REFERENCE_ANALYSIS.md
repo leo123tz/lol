@@ -66,18 +66,21 @@ is the main check that the camera model is right.
    Bézier handles from the analytic slopes, Cycles modifiers for seamless looping). The
    Roblox KeyframeSequence is sampled at 60 Hz from the evaluated Blender rig.
 
-## Results
+## Results and comparison with the original files
 
-| | Facing yaw | Fit (loss per image, lower is better) | Notes |
-|---|---|---|---|
-| Walk | 181° (towards the camera) | 3983 | smooth symmetric model, 4 harmonics |
-| Run | 187° | 2516 | smooth symmetric model, 3 harmonics |
+The creator's source files (`animation/source/`) later became available. They confirm the
+measurements:
 
-Fitting each captured phase independently lowers the loss only a little (walk 3747, run 2409),
-but neighbouring poses then flip between the "limb forward" and "limb back" readings, which a
-single front/three-quarter view cannot tell apart. The resulting animation jitters badly.
-That is why the exported curves use the smooth model.
+| | Measured from the video | Original file |
+|---|---|---|
+| Walk cycle | 1.000 s | 60 frames @ 60 fps = 1.000 s |
+| Run cycle | 0.667 s | 40 frames @ 60 fps = 0.667 s |
 
-Visual check: the walk follows the reference well. The run follows the timing and the general
-sprint shape, but the fitted head and torso orientation and several limb poses don't match
-the video. The run needs manual correction (see the README's Status section).
+Rendered through the reconstructed camera, the original walk overlays the video almost
+perfectly (`img/verify_walk.png`). The original run reproduces the pose sequence
+(`img/verify_run.png`). The residual offset comes from the runner's estimated placement,
+which was taken from the approximate pose fit.
+
+The pose fitting itself recovered the walk only approximately and the run poorly. From a
+single front/three-quarter view at 12 fps, a limb swung forward and one swung back look
+nearly the same. The shipped animations are therefore the originals, not the fitted curves.

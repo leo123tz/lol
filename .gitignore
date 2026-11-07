@@ -5,3 +5,4 @@ animation/output/preview/
 __pycache__/
 *.pyc
 *.blend1
+animation/analysis/output/
