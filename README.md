@@ -58,6 +58,19 @@ python3 animation/blender/build_r6_locomotion.py --out animation/output
 python3 animation/tools/verify_export.py
 ```
 
+## Easiest install (one file)
+
+1. In Roblox Studio, right-click **Workspace** → **Insert from File…** → choose
+   `roblox/R6Locomotion_Install.rbxmx`.
+2. From the inserted folder, drag **LocomotionAnimation** into **ReplicatedStorage**, and drag
+   **LocomotionAnimator** into **StarterPlayer → StarterCharacterScripts**. Then delete the
+   empty `R6Locomotion_Install` folder.
+3. Press **Play**. The walk and run already work in Studio.
+4. For the live game: in ReplicatedStorage → LocomotionAnimation → Sources, right-click
+   **R6_Walk** → **Save to Roblox**, pick your group as the creator, and copy the number it
+   gives you into `Config` → `WalkAnimationId`. Do the same for **R6_Run** (`RunAnimationId`),
+   then publish the game.
+
 ## Video analysis
 
 Before the source files were available, I measured the motion directly from the video. See
