@@ -195,6 +195,12 @@ def build_action(rig, spec):
                 for kp, (fr, val, slope) in zip(fc.keyframe_points, keys):
                     kp.co = (fr, val)
                     kp.interpolation = spec.get("interpolation", "BEZIER")
+                if spec.get("handles") == "AUTO_CLAMPED":
+                    for kp in fc.keyframe_points:
+                        kp.handle_left_type = kp.handle_right_type = "AUTO_CLAMPED"
+                    fc.modifiers.new("CYCLES")
+                    fc.update()  # cycle-aware auto handles
+                    continue
                 for i, kp in enumerate(fc.keyframe_points):
                     fr, val, slope = keys[i]
                     dl = (fr - keys[i - 1][0]) if i > 0 else (keys[1][0] - keys[0][0])

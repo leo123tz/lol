@@ -16,6 +16,7 @@
 --   the boolean attribute Config.SuppressAttribute set to true.
 
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local KeyframeSequenceProvider = game:GetService("KeyframeSequenceProvider")
 
@@ -182,8 +183,47 @@ end
 
 local heartbeat = RunService.Heartbeat:Connect(update)
 
+-- Optional built-in sprint (Config.EnableSprintKey). Restores the previous WalkSpeed on release,
+-- so other systems that set WalkSpeed while not sprinting keep working.
+local sprintConnections: { RBXScriptConnection } = {}
+if Config.EnableSprintKey then
+	local SPRINT_KEYS = {
+		[Enum.KeyCode.LeftShift] = true,
+		[Enum.KeyCode.RightShift] = true,
+		[Enum.KeyCode.ButtonL3] = true,
+	}
+	local sprinting = false
+	local speedBeforeSprint = humanoid.WalkSpeed
+	local function setSprint(on: boolean)
+		if on == sprinting then
+			return
+		end
+		sprinting = on
+		if on then
+			speedBeforeSprint = humanoid.WalkSpeed
+			humanoid.WalkSpeed = Config.SprintSpeed
+		elseif humanoid.WalkSpeed == Config.SprintSpeed then
+			humanoid.WalkSpeed = speedBeforeSprint
+		end
+	end
+	table.insert(sprintConnections, UserInputService.InputBegan:Connect(function(input)
+		-- Don't rely on gameProcessedEvent: Shift Lock binds Shift too. Only skip while typing.
+		if SPRINT_KEYS[input.KeyCode] and not UserInputService:GetFocusedTextBox() then
+			setSprint(true)
+		end
+	end))
+	table.insert(sprintConnections, UserInputService.InputEnded:Connect(function(input)
+		if SPRINT_KEYS[input.KeyCode] then
+			setSprint(false)
+		end
+	end))
+end
+
 local function shutdown()
 	heartbeat:Disconnect()
+	for _, connection in sprintConnections do
+		connection:Disconnect()
+	end
 	for _, track in tracks do
 		track:Stop(0)
 		track:Destroy()

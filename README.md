@@ -24,6 +24,12 @@ changes:
   closing keyframe equal to the first makes each loop last exactly the authored cycle.
 - **Priority:** Movement instead of the original Action, so throwing and other Action
   animations play on top.
+- **Smoothing (on by default):** the originals are stepped. Every part holds a pose for 5
+  frames and then snaps to the next (12 key poses per walk cycle, 8 per run cycle). The
+  shipped versions keep exactly those key poses at the same times, but interpolate between
+  them with auto-clamped Bézier curves. The largest single-frame jump drops from 40° to 10°
+  (walk) and from 92° to 22° (run). For the exact stepped original, run
+  `import_original.py --stepped` and rebuild.
 
 **Credit / licence:** the animations are `@aski_2603`'s work. Check their terms before
 publishing them in your game.
@@ -65,7 +71,8 @@ python3 animation/tools/verify_export.py
 2. From the inserted folder, drag **LocomotionAnimation** into **ReplicatedStorage**, and drag
    **LocomotionAnimator** into **StarterPlayer → StarterCharacterScripts**. Then delete the
    empty `R6Locomotion_Install` folder.
-3. Press **Play**. The walk and run already work in Studio.
+3. Press **Play**. The walk and run already work in Studio. Hold **Shift** to sprint, which plays
+   the run (turn this off with `Config.EnableSprintKey = false` if your game has its own sprint).
 4. For the live game: in ReplicatedStorage → LocomotionAnimation → Sources, right-click
    **R6_Walk** → **Save to Roblox**, pick your group as the creator, and copy the number it
    gives you into `Config` → `WalkAnimationId`. Do the same for **R6_Run** (`RunAnimationId`),

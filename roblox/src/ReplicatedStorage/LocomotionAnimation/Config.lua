@@ -16,7 +16,12 @@ Config.RunAnimationId = 0 -- rbxassetid of R6_Run
 -- reference video (walk cycle 1.000 s, run cycle 0.667 s). Playback speed is scaled
 -- by currentSpeed / referenceSpeed so feet keep pace with the character.
 Config.WalkReferenceSpeed = 16 -- Roblox default Humanoid.WalkSpeed
-Config.RunReferenceSpeed = 26
+Config.RunReferenceSpeed = 24 -- = SprintSpeed, so sprinting plays the run at the video's timing
+
+-- Built-in sprint: hold Left/Right Shift (or press the left stick on a gamepad) to run.
+-- Set EnableSprintKey = false if your game already has its own sprint system.
+Config.EnableSprintKey = true
+Config.SprintSpeed = 24
 
 -- Speed band selection. Above RunEnterSpeed the run plays; it keeps playing until the
 -- speed drops below RunExitSpeed (hysteresis prevents flicker at the boundary).

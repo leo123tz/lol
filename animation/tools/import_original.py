@@ -1,6 +1,8 @@
 """Convert the original KeyframeSequences (.rbxm) into keyed curves for the Blender R6 rig.
 
-usage: python3 animation/tools/import_original.py   (needs bpy/mathutils: pip install bpy lz4)
+usage: python3 animation/tools/import_original.py [--stepped]   (needs bpy: pip install bpy lz4)
+       default: smooth (authored key poses, flowing Bezier interpolation)
+       --stepped: exact original (hold each pose 5 frames, then snap)
 Reads  animation/source/rbxm/Rig animation walk.rbxm, Rig animation run.rbxm
 Writes animation/data/R6_Walk.json, R6_Run.json  (consumed by animation/blender/build_r6_locomotion.py)
 
@@ -32,6 +34,7 @@ R0 = {
     "Left Leg": Matrix(((0, 0, -1), (0, 1, 0), (1, 0, 0))),
 }
 ORDER = {"Torso": "ZXY", "Head": "ZXY", "Right Arm": "YZX", "Left Arm": "YZX", "Right Leg": "YZX", "Left Leg": "YZX"}
+KEY_STEP = 5  # the originals change pose every 5 frames (12 key poses per walk cycle, 8 per run cycle)
 SOURCES = {"R6_Walk": "Rig animation walk.rbxm", "R6_Run": "Rig animation run.rbxm"}
 
 
@@ -48,7 +51,7 @@ def load_keyframes(path):
     return ks, kfs
 
 
-def convert(name, src):
+def convert(name, src, smooth=True):
     ks, kfs = load_keyframes(src)
     fps = 60
     n = len(kfs)  # frames 0..n-1 at 60 Hz; frame n closes the loop
@@ -56,7 +59,14 @@ def convert(name, src):
     assert times == list(range(n)), f"{name}: expected one keyframe per 60 Hz frame"
     channels = {}
     prev = {}
+    # The originals are stepped: every part holds a pose for 5 frames and then snaps to the next
+    # (Constant interpolation in the source .blend). In smooth mode only those authored key poses
+    # are kept, at their original frames, and Blender interpolates between them with auto-clamped
+    # Bezier curves (no overshoot), so the poses and timing stay the same but the motion flows.
+    step = KEY_STEP if smooth else 1
     for frame, (_, poses) in enumerate(kfs + [kfs[0]]):
+        if frame % step:
+            continue
         for bone, r0 in R0.items():
             T = poses.get(bone)
             if T is None:
@@ -76,7 +86,9 @@ def convert(name, src):
             del ch["location"]
     return {
         "name": name, "fps": fps, "frames": n, "loop": True, "priority": "Movement",
-        "interpolation": "LINEAR",
+        "interpolation": "BEZIER" if smooth else "LINEAR",
+        "handles": "AUTO_CLAMPED" if smooth else "FREE",
+        "smoothed": smooth, "key_step": step,
         "source": {"file": os.path.basename(src), "keyframe_sequence": ks.Name,
                    "original_priority": ks.props.get("Priority"), "keyframes": n,
                    "authored_length_s": n / fps},
@@ -88,6 +100,6 @@ if __name__ == "__main__":
     src_dir = os.path.join(ROOT, "animation", "source", "rbxm")
     out_dir = os.path.join(ROOT, "animation", "data")
     for name, fn in SOURCES.items():
-        spec = convert(name, os.path.join(src_dir, fn))
+        spec = convert(name, os.path.join(src_dir, fn), smooth="--stepped" not in sys.argv)
         json.dump(spec, open(os.path.join(out_dir, f"{name}.json"), "w"), indent=1)
         print(name, spec["source"])
