@@ -1,0 +1,21 @@
+{
+  "name": "R6Locomotion",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "LocomotionAnimation": {
+        "$path": "src/ReplicatedStorage/LocomotionAnimation"
+      }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterCharacterScripts": {
+        "$className": "StarterCharacterScripts",
+        "LocomotionAnimator": {
+          "$path": "src/StarterPlayer/StarterCharacterScripts/LocomotionAnimator.client.lua"
+        }
+      }
+    }
+  }
+}
